@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} - Kudo{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <div>
+            <a href="/projects" class="back">← Мои проекты</a>
+            <h1>{{ project.title }}</h1>
+        </div>
+        <a href="#" class="btn btn-primary">+ Добавить колонку</a>
+    </div>
+
+    <div class="board">
+        {% for column in columns %}
+            <div class="board-column" data-column-id="{{ column.id }}">
+                <div class="column-header">
+                    <h3>{{ column.title }}</h3>
+                    <span class="card-count">{{ column.cards|length }}</span>
+                </div>
+
+                <div class="cards" data-column-id="{{ column.id }}">
+                    {% for card in column.cards %}
+                        <div class="card" data-card-id="{{ card.id }}">
+                            <div class="card-title">{{ card.title }}</div>
+                            {% if card.description %}
+                                <div class="card-description">{{ card.description }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="add-card-btn">Карточка</button>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+    

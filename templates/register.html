@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - Kudo{% endblock %}
+
+{% block content %}
+    <div class="auth-form">
+        <h1>Регистрация</h1>
+
+        <form method="post" action="/register" class="form">
+            <label>
+                Email
+                <input type="email" name="email" required autofocus>
+            </label>
+
+            <label>
+                Password
+                <input type="password" name="password" required minlength="6">
+            </label>
+
+            <button type="submit" class="btn btn-primary">Создать аккаунт</button>
+        </form>
+
+        <p class="auth-switch">
+            Есть аккаунт?
+            <a href="/login">Войти</a>
+        </p>
+    </div>
+{% endblock %}
