@@ -13,7 +13,7 @@ body {
 }
 
 header {
-    background: #f5d312;
+    background: linear-gradient(90deg, #FBBF24, #F97316);
     color: white;
     padding: 1rem 2rem;
     display: flex;
@@ -25,7 +25,7 @@ header {
     color: white;
     text-decoration: none;
     font-size: 1.3rem;
-    font-weight: bold;
+    font-weight: 800;
 }
 
 header nav a {
@@ -35,11 +35,12 @@ header nav a {
 }
 
 header nav a:hover {
-    color: #4ade80;
+    color: white;
+    opacity: 0.85
 }
 
 .user-email {
-    color: #4ade80;
+    color: white;
     margin-left: 1.5rem;
 }
 
@@ -76,16 +77,16 @@ footer {
 }
 
 .btn:hover {
-    background: #d4d4d4;
+    background: #D97706;
 }
 
 .btn-primary {
-    background: #16a34a;
+    background: #F59E0B;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #15803d;
+    background: #F59E0B;
 }
 
 /* Лендинг */
@@ -140,7 +141,8 @@ footer {
 
 .form input:focus {
     outline: none;
-    border-color: #16a34a;
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
 }
 
 .auth-switch {

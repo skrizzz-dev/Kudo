@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Новый проект — Kudo{% endblock %}
+
+{% block content%}
+    <div class="page-header">
+        <div>
+            <a href="/projects" class="back">Мои проекты</a>
+            <h1>Новый проект</h1>
+        </div>
+    </div>
+
+    <form method="post" action="/projects" class="form" style="max-width: 500px;">
+        <label>
+            Название проекта
+            <input type="text" name="title" required autofocus maxlength="100">
+        </label>
+
+        <button type="submit" class="btn btn-primary">Создать</button>
+    </form>
+{% endblock %}
