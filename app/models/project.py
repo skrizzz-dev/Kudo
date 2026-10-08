@@ -20,4 +20,5 @@ class Project(Base):
     boards: Mapped[list["Board"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
+        order_by="Board.position",
     )

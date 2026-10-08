@@ -13,10 +13,12 @@
 
     <div class="board">
         {% for column in columns %}
-            <div class="board-column" data-column-id="{{ column.id }}">
+            <div class="board-column" 
+            data-column-id="{{ column.id }}" 
+            style="background: {{ BOARD_COLORS[column.color]}}">
                 <div class="column-header">
                     <h3>{{ column.title }}</h3>
-                    <span class="card-count">{{ column.cards|length }}</span>
+                    <button class="color-btn" data-column-id="{{ column.id }}">🎨</button>
                 </div>
 
                 <div class="cards" data-column-id="{{ column.id }}">
@@ -33,5 +35,42 @@
             </div>
         {% endfor %}
     </div>
+
+    <div id="color-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Выбери цвет</h3>
+            <form method="post" id="color-form" action="">
+                <div class="color-picker">
+                    {% for color_name, color_hex in BOARD_COLORS.items() %}
+                        <button type="submit"
+                            name="color"
+                            value="{{ color_name }}"
+                            class="color-option"
+                            style="background: {{ color_hex }}">
+                        </button>                    
+                    {% endfor %}
+                </div>
+            </form>
+            <button onclick="document.getElementById('color-modal').style.display='none'" class="btn">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        const colorModal = document.getElementById('color-modal');
+        const colorForm = document.getElementById('color-form');
+
+        document.addEventListener('click', function(event) {
+            const button = event.target.closest('.color-btn');
+            if (!button) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const columnId = button.getAttribute('data-column-id');
+            console.log('Clicked board id:', columnId);
+            colorForm.action = `/boards/${columnId}/color`;
+            colorModal.style.display = 'flex';
+        });
+    </script>
 {% endblock %}
     
