@@ -4,9 +4,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Form
-from app.models.board import Board
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,8 +13,11 @@ from app.core.deps import get_optional_user
 from app.database import get_session
 from app.models.user import User
 from app.models.project import Project
+from app.models.card import Card
+from app.models.board import Board
 from app.routers import auth, users
 from app.constants import BOARD_COLORS
+from app.schemas.card import CardMove
 
 app = FastAPI()
 
@@ -137,3 +139,109 @@ async def board_view(
             "BOARD_COLORS": BOARD_COLORS,
             },
         )
+    
+@app.post("/cards")
+async def card_create(
+    title: str = Form(...),
+    description: str = Form(""),
+    board_id: int = Form(...),
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    board = await session.get(Board, board_id)
+    if not board:
+        raise HTTPException(404, "Не удалось найти доску")
+    
+    project = await session.get(Project, board.project_id)
+    if project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа к проекту")
+    
+    max_position = await session.scalar(select(func.max(Card.position)).where(Card.board_id == board_id))
+    position = (max_position or 0) + 1
+    
+    card = Card(
+        board_id=board_id,
+        title=title,
+        description=description or None,
+        position=position,
+    )
+    
+    session.add(card)
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{project.id}", status_code=303)
+
+@app.post("/cards/{card_id}/delete")
+async def card_delete(
+    card_id: int,
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not user:
+        return RedirectResponse("/login")
+    
+    card = await session.get(Card, card_id)
+    if not card:
+        raise HTTPException(404, "Карточка не найдена")
+    
+    board = await session.get(Board, card.board_id)
+    project = await session.get(Project, board.project_id)
+    if project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа к проекту")
+    
+    await session.delete(card)
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{project.id}", status_code=303)
+
+@app.patch("/cards/{card_id}/move")
+async def move_card(
+    card_id: int,
+    data: CardMove,
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+   
+    card = await session.get(Card, card_id)
+    if not card:
+        raise HTTPException(404, "Карточка не найдена")
+    
+    board = await session.get(Board, card.board_id)
+    project = await session.get(Project, board.project_id)
+    if not project or project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа к проекту")
+    
+    new_board = await session.get(Board, data.board_id)
+    if not new_board or new_board.project_id != project.id:
+        raise HTTPException(400, "Неверная доска")
+    
+    old_board_id = card.board_id
+    
+    if old_board_id != data.board_id:
+        card.board_id = data.board_id
+        cards = (await session.scalars(
+            select(Card).where(Card.board_id == old_board_id).order_by(Card.position)
+        )).all()
+        
+        for i, c in enumerate(cards):
+            c.position = i
+            
+    cards = (await session.scalars(
+        select(Card)
+        .where(Card.board_id == data.board_id, Card.id != card.id)
+        .order_by(Card.position)
+    )).all()
+    
+    # Проверка границ позиций
+    pos = max(0, min(data.position, len(cards)))
+    cards.insert(pos, card)
+    
+    for i, c in enumerate(cards):
+        c.position = i
+        
+    await session.commit()

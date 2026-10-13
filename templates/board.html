@@ -5,7 +5,7 @@
 {% block content %}
     <div class="page-header">
         <div>
-            <a href="/projects" class="back">← Мои проекты</a>
+            <a href="/projects" class="back">Мои проекты</a>
             <h1>{{ project.title }}</h1>
         </div>
         <a href="#" class="btn btn-primary">+ Добавить колонку</a>
@@ -28,12 +28,36 @@
                             {% if card.description %}
                                 <div class="card-description">{{ card.description }}</div>
                             {% endif %}
+                            <button type="button" class="card-delete" onclick="deleteCard({{ card.id }})" title="Удалить">🗑</button>
                         </div>
                     {% endfor %}
                 </div>
-                <button class="add-card-btn">Карточка</button>
+                <button type="button" class="add-card-btn" data-board-id="{{ column.id }}">Карточка</button>
             </div>
         {% endfor %}
+    </div>
+
+    <div id="card-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Новая карточка</h3>
+            <form method="post" id="card-form" action="/cards" class="form">
+                <input type="hidden" name="board_id" id="card-board-id">
+                <label>
+                    Название
+                    <input type="text" name="title" required maxlength="200">
+                </label>
+
+                <label>
+                    Описание
+                    <textarea name="description" rows="3" maxlength="1000"></textarea>
+                </label>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                    <button type="button" onclick="document.getElementById('card-modal').style.display='none'" class="btn">Отмена</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div id="color-modal" class="modal" style="display: none;">
@@ -55,22 +79,66 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
     <script>
-        const colorModal = document.getElementById('color-modal');
-        const colorForm = document.getElementById('color-form');
+    const colorModal = document.getElementById('color-modal');
+    const colorForm = document.getElementById('color-form');
+    const cardModal = document.getElementById('card-modal');
+    const cardForm = document.getElementById('card-form');
 
-        document.addEventListener('click', function(event) {
-            const button = event.target.closest('.color-btn');
-            if (!button) return;
-
+    document.addEventListener('click', function(event) {
+        const colorBtn = event.target.closest('.color-btn');
+        if (colorBtn) {
             event.preventDefault();
             event.stopPropagation();
-
-            const columnId = button.getAttribute('data-column-id');
-            console.log('Clicked board id:', columnId);
+            const columnId = colorBtn.getAttribute('data-column-id');
             colorForm.action = `/boards/${columnId}/color`;
             colorModal.style.display = 'flex';
-        });
+            return;
+        }
+
+        const addBtn = event.target.closest('.add-card-btn');
+        if (addBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const boardId = addBtn.getAttribute('data-board-id');
+            document.getElementById('card-board-id').value = boardId;
+            cardForm.action = '/cards';
+            cardModal.style.display = 'flex';
+            return;
+        }
+    });
+
+    function deleteCard(cardId) {
+        if (!confirm('Удалить карточку?')) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/cards/${cardId}/delete`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    document.querySelectorAll('.cards').forEach(el => {
+        new Sortable(el, {
+            group: 'cards',
+            animation: 150,
+            onEnd: (event) => {
+                const cardId = event.item.dataset.cardId;
+                const newBoardId = event.to.dataset.columnId;
+                const newPosition = event.newIndex;
+
+                fetch(`/cards/${cardId}/move`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        board_id: +newBoardId,
+                        position: newPosition
+                    })
+                })
+            }
+        })
+    })
     </script>
 {% endblock %}
     
