@@ -8,7 +8,7 @@
             <a href="/projects" class="back">Мои проекты</a>
             <h1>{{ project.title }}</h1>
         </div>
-        <a href="#" class="btn btn-primary">+ Добавить колонку</a>
+        <button type="button" id="add-board-btn" class="btn btn-primary">+ Добавить колонку</button>
     </div>
 
     <div class="board">
@@ -18,7 +18,15 @@
             style="background: {{ BOARD_COLORS[column.color]}}">
                 <div class="column-header">
                     <h3>{{ column.title }}</h3>
-                    <button class="color-btn" data-column-id="{{ column.id }}">🎨</button>
+                    <div class="column-actions">
+                        <button class="rename-btn"
+                            data-column-id="{{ column.id }}"
+                            data-column-title="{{ column.title }}">✏️</button>
+                        <button class="color-btn" data-column-id="{{ column.id }}">🎨</button>
+                        <button class="delete-board-btn" 
+                            data-column-id="{{ column.id }}"
+                            data-column-title="{{ column.title }}">🗑</button>
+                    </div>
                 </div>
 
                 <div class="cards" data-column-id="{{ column.id }}">
@@ -36,6 +44,41 @@
             </div>
         {% endfor %}
     </div>
+
+    <div id="board-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <form method="post" id="board-form" action="/boards" class="form">
+                <input type="hidden" name="project_id" value="{{ project.id }}">
+                <label>
+                    Название колонки
+                    <input type="text" name="title" required maxlength="100" autofocus>
+                </label>
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                    <button type="button" onclick="document.getElementById('board-modal').style.display='none'" class="btn">Отмена</button>  
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="rename-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Переименовать колонку</h3>
+            <form method="post" id="rename-form" action="/boards" class="form">
+                <label>
+                    Новое название
+                    <input type="text" name="title" id="rename-title" required maxlength="100" autofocus>
+                </label>
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                    <button type="button" onclick="document.getElementById('rename-modal').style.display='none'" class="btn">Отмена</button>  
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <div id="card-modal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -95,6 +138,23 @@
             const columnId = colorBtn.getAttribute('data-column-id');
             colorForm.action = `/boards/${columnId}/color`;
             colorModal.style.display = 'flex';
+            return;
+        }
+        const addBoardBtn = event.target.closest('#add-board-btn')
+        if (addBoardBtn) {
+            event.preventDefault();
+            document.getElementById('board-modal').style.display = "flex";
+            return;
+        }
+        const renameBtn = event.target.closest('.rename-btn');
+        if (renameBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const columnId = renameBtn.getAttribute('data-column-id');
+            const columnTitle = renameBtn.getAttribute('data-column-title');
+            document.getElementById('rename-form').action = `/boards/${columnId}/rename`;
+            document.getElementById('rename-title').value = columnTitle;
+            document.getElementById('rename-modal').style.display = 'flex';
             return;
         }
 

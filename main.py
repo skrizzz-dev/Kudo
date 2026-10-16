@@ -51,6 +51,36 @@ async def projects_list(request: Request, user: User | None = Depends(get_option
     
     return templates.TemplateResponse(request=request, name="projects.html", context={"user": user, "projects": projects})
 
+@app.get("/projects/{project_id}", response_class=HTMLResponse)
+async def board_view(
+    request: Request, 
+    project_id: int, 
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    
+    project = await session.scalar(
+        select(Project)
+        .where(Project.id == project_id, Project.user_id == user.id)
+        .options(selectinload(Project.boards).selectinload(Board.cards))
+    )
+    
+    if not project:
+        raise HTTPException(404, "Проект не найден")
+        
+    return templates.TemplateResponse(
+        request=request, 
+        name="board.html", 
+        context={
+            "user": user, 
+            "project": project, 
+            "columns": project.boards,
+            "BOARD_COLORS": BOARD_COLORS,
+            },
+        )
+
 @app.get("/projects/new", response_class=HTMLResponse)
 async def project_new_form(
     request: Request,
@@ -110,36 +140,63 @@ async def set_board_color(
     
     return RedirectResponse(f"/projects/{board.project_id}", status_code=303)
 
-@app.get("/projects/{project_id}", response_class=HTMLResponse)
-async def board_view(
-    request: Request, 
-    project_id: int, 
+@app.post("/boards")
+async def board_create(
+    title: str = Form(...),
+    project_id: int = Form(...),
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not user:
+        raise HTTPException(401, "Не автризован")
+
+    project = await session.get(Project, project_id)
+    if not project or project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа")
+    
+    boards_count = await session.scalar(
+        select(func.count()).select_from(Board).where(Board.project_id == project_id))
+    if boards_count >= 9:
+        raise HTTPException(400, "Всего колонок не должно быть больше 9")
+    
+    max_position = await session.scalar(
+        select(func.max(Board.position)).where(Board.project_id == project_id)
+    )
+    position = (max_position or 0) + 1
+    
+    board = Board(
+        project_id=project_id,
+        title=title,
+        position=position,
+    )
+    session.add(board)
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{project_id}", status_code=303)
+    
+@app.post("/boards/{board_id}/rename")
+async def board_rename(
+    board_id: int,
+    title: str = Form(...),
     user: User | None = Depends(get_optional_user),
     session: AsyncSession = Depends(get_session)
 ):
     if not user:
-        return RedirectResponse("/login", status_code=303)
+        return HTTPException(401, "Не авторизован")
     
-    project = await session.scalar(
-        select(Project)
-        .where(Project.id == project_id, Project.user_id == user.id)
-        .options(selectinload(Project.boards).selectinload(Board.cards))
-    )
+    board = await session.get(Board, board_id)
+    if not board:
+        raise HTTPException(404, "Доска не найдена")
     
-    if not project:
-        raise HTTPException(404, "Проект не найден")
-        
-    return templates.TemplateResponse(
-        request=request, 
-        name="board.html", 
-        context={
-            "user": user, 
-            "project": project, 
-            "columns": project.boards,
-            "BOARD_COLORS": BOARD_COLORS,
-            },
-        )
+    project = await session.get(Project, board.project_id)
+    if not project or project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа")
     
+    board.title = title.strip()
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{project.id}", status_code=303)
+
 @app.post("/cards")
 async def card_create(
     title: str = Form(...),
