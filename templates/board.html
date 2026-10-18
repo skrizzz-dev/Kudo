@@ -31,7 +31,10 @@
 
                 <div class="cards" data-column-id="{{ column.id }}">
                     {% for card in column.cards %}
-                        <div class="card" data-card-id="{{ card.id }}">
+                        <div class="card" 
+                            data-card-id="{{ card.id }}"
+                            data-card-title="{{ card.title }}"
+                            data-card-description="{{ card.description or '' }}">
                             <div class="card-title">{{ card.title }}</div>
                             {% if card.description %}
                                 <div class="card-description">{{ card.description }}</div>
@@ -103,6 +106,28 @@
         </div>
     </div>
 
+    <div id="edit-card-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Редактировать карточку</h3>
+            <form method="post" id="edit-card-form" class="form">
+                <label>
+                    Название
+                    <input type="text" name="title" id="edit-card-title" required maxlength="200">
+                </label>
+                
+                <label>
+                    Описание
+                    <textarea name="description" id="edit-card-desc" rows="3" maxlength="1000"></textarea>
+                </label>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="button" onclick="document.getElementById('edit-card-modal').style.display='none'" class="btn">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="color-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <h3>Выбери цвет</h3>
@@ -166,6 +191,39 @@
             document.getElementById('card-board-id').value = boardId;
             cardForm.action = '/cards';
             cardModal.style.display = 'flex';
+            return;
+        }
+
+        const deleteBoardBtn = event.target.closest('.delete-board-btn')
+        if (deleteBoardBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const columnId = deleteBoardBtn.getAttribute('data-column-id');
+            const columnTitle = deleteBoardBtn.getAttribute('data-column-title');
+            if (!confirm(`Удалить колонку "${columnTitle}"? Все карточки также будут удалены.`)){
+                return;
+            }
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/boards/${columnId}/delete`;
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+
+        const cardElement = event.target.closest('.card')
+        if (cardElement && !event.target.closest('.card-delete')) {
+            event.preventDefault();
+
+            const cardId = cardElement.getAttribute('data-card-id');
+            const cardTitle = cardElement.getAttribute('data-card-title');
+            const cardDesc = cardElement.getAttribute('data-card-description');
+
+            document.getElementById('edit-card-form').action = `/cards/${cardId}/edit`;
+            document.getElementById('edit-card-title').value = cardTitle;
+            document.getElementById('edit-card-desc').value = cardDesc;
+            document.getElementById('edit-card-modal').style.display = 'flex';
+   
             return;
         }
     });

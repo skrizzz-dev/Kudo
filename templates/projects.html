@@ -11,10 +11,15 @@
     {% if projects %}
         <div class="projects-grid">
             {% for project in projects %}
-                <a href="/projects/{{ project.id }}" class="project-card">
-                    <h3>{{ project.title }}</h3>
-                    <!-- <p>{{ project.boards_count }} досок</p> -->
-                </a>
+                <div class="project-card-wrapper">
+                    <a href="/projects/{{ project.id }}" class="project-card">
+                        <h3>{{ project.title }}</h3>
+                    </a>
+                    <button type="button" class="delete-project-btn"
+                    data-project-id="{{ project.id }}"
+                    data-project-title="{{ project.title }}"
+                    title="Удалить проект">🗑</button>
+                </div>
             {% endfor %}
         </div>
     {% else %}
@@ -23,4 +28,27 @@
             <a href="/projects/new" class="btn btn-primary">Создать первый проект</a>
         </div>
     {% endif %}
+
+    <script>
+        document.addEventListener("click", function(event) {
+            const deleteBtn = event.target.closest('.delete-project-btn');
+            if (deleteBtn) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const projectId = deleteBtn.getAttribute('data-project-id');
+                const projectTitle = deleteBtn.getAttribute('data-project-title');
+
+                if (!confirm(`Удалить проект "${projectTitle}"? Все доски и карточки будут удалены навсегда`)){
+                    return;
+                }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/projects/${projectId}/delete`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    </script>
 {% endblock %}

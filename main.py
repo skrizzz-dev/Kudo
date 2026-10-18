@@ -37,6 +37,15 @@ async def index(request: Request, user: User | None = Depends(get_optional_user)
 async def about(request: Request, user: User | None = Depends(get_optional_user)):
     return templates.TemplateResponse(request=request, name="about.html", context={"user": user})
 
+@app.get("/projects/new", response_class=HTMLResponse)
+async def project_new_form(
+    request: Request,
+    user: User | None = Depends(get_optional_user)
+):
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    return templates.TemplateResponse(request=request, name="project_new.html", context={"user": user})
+
 @app.get("/projects", response_class=HTMLResponse)
 async def projects_list(request: Request, user: User | None = Depends(get_optional_user), session: AsyncSession = Depends(get_session)):
     if not user:
@@ -80,16 +89,7 @@ async def board_view(
             "BOARD_COLORS": BOARD_COLORS,
             },
         )
-
-@app.get("/projects/new", response_class=HTMLResponse)
-async def project_new_form(
-    request: Request,
-    user: User | None = Depends(get_optional_user)
-):
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    return templates.TemplateResponse(request=request, name="project_new.html", context={"user": user})
-
+    
 @app.post("/projects")
 async def project_create(
     title: str = Form(...),
@@ -114,31 +114,25 @@ async def project_create(
     
     return RedirectResponse(f"/projects/{project.id}", status_code=303)
 
-@app.post("/boards/{board_id}/color")
-async def set_board_color(
-    board_id: int,
-    color: str = Form(...),
+@app.post("/projects/{project_id}/delete")
+async def project_delete(
+    project_id: int,
     user: User | None = Depends(get_optional_user),
     session: AsyncSession = Depends(get_session),
 ):
     if not user:
-        return RedirectResponse("/login", status_code=303)
-
-    if color not in BOARD_COLORS:
-        raise HTTPException(400, "Неверный цвет")
-
-    board = await session.get(Board, board_id)
-    if not board:
-        raise HTTPException(404, "Доска не найдена")
+        raise HTTPException(401, "Не авторизован")
     
-    project = await session.get(Project, board.project_id)
+    project = await session.get(Project, project_id)
+    if not project:
+        raise HTTPException(404, "Нет доступа")
     if project.user_id != user.id:
         raise HTTPException(403, "Нет доступа")
     
-    board.color = color
+    await session.delete(project)
     await session.commit()
     
-    return RedirectResponse(f"/projects/{board.project_id}", status_code=303)
+    return RedirectResponse("/projects", status_code=303)
 
 @app.post("/boards")
 async def board_create(
@@ -148,7 +142,7 @@ async def board_create(
     session: AsyncSession = Depends(get_session),
 ):
     if not user:
-        raise HTTPException(401, "Не автризован")
+        raise HTTPException(401, "Не авторизован")
 
     project = await session.get(Project, project_id)
     if not project or project.user_id != user.id:
@@ -174,29 +168,6 @@ async def board_create(
     
     return RedirectResponse(f"/projects/{project_id}", status_code=303)
     
-@app.post("/boards/{board_id}/rename")
-async def board_rename(
-    board_id: int,
-    title: str = Form(...),
-    user: User | None = Depends(get_optional_user),
-    session: AsyncSession = Depends(get_session)
-):
-    if not user:
-        return HTTPException(401, "Не авторизован")
-    
-    board = await session.get(Board, board_id)
-    if not board:
-        raise HTTPException(404, "Доска не найдена")
-    
-    project = await session.get(Project, board.project_id)
-    if not project or project.user_id != user.id:
-        raise HTTPException(403, "Нет доступа")
-    
-    board.title = title.strip()
-    await session.commit()
-    
-    return RedirectResponse(f"/projects/{project.id}", status_code=303)
-
 @app.post("/cards")
 async def card_create(
     title: str = Form(...),
@@ -231,6 +202,106 @@ async def card_create(
     
     return RedirectResponse(f"/projects/{project.id}", status_code=303)
 
+@app.post("/boards/{board_id}/color")
+async def set_board_color(
+    board_id: int,
+    color: str = Form(...),
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    if color not in BOARD_COLORS:
+        raise HTTPException(400, "Неверный цвет")
+
+    board = await session.get(Board, board_id)
+    if not board:
+        raise HTTPException(404, "Доска не найдена")
+    
+    project = await session.get(Project, board.project_id)
+    if project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа")
+    
+    board.color = color
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{board.project_id}", status_code=303)
+
+@app.post("/boards/{board_id}/rename")
+async def board_rename(
+    board_id: int,
+    title: str = Form(...),
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    
+    board = await session.get(Board, board_id)
+    if not board:
+        raise HTTPException(404, "Доска не найдена")
+    
+    project = await session.get(Project, board.project_id)
+    if not project or project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа")
+    
+    board.title = title.strip()
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{project.id}", status_code=303)
+
+@app.post("/boards/{board_id}/delete")
+async def board_delete(
+    board_id: int,
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+
+    board = await session.get(Board, board_id)
+    if not board:
+        raise HTTPException(404, "Доска не найдена")
+    
+    project = await session.get(Project, board.project_id)
+    if not project or project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа")
+    
+    project_id = project.id
+    
+    await session.delete(board)
+    await session.commit()
+    
+    return RedirectResponse(f"/projects/{project_id}", status_code=303)
+
+@app.post("/cards/{card_id}/edit")
+async def card_edit(
+    card_id: int,
+    title: str = Form(...),
+    description: str = Form(...),
+    user: User | None = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if not user:
+        return RedirectResponse("/login")
+        
+    card = await session.get(Card, card_id)
+    if not card:
+        raise HTTPException(404, "Карточка не найдена")
+    
+    board = await session.get(Board, card.board_id)
+    
+    project = await session.get(Project, board.project_id)
+    if not project or project.user_id != user.id:
+        raise HTTPException(403, "Нет доступа к проекту")
+    
+    card.title = title.strip()
+    card.description = description.strip() or None
+    
+    await session.commit()
+    return RedirectResponse(f"/projects/{project.id}", status_code=303)
+        
 @app.post("/cards/{card_id}/delete")
 async def card_delete(
     card_id: int,
