@@ -100,6 +100,16 @@ footer {
     margin-bottom: 0.5rem;
 }
 
+.landing-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    text-align: center;
+    padding-bottom: 10vh;
+}
+
 .landing-subtitle {
     font-size: 1.2rem;
     color: #666;
@@ -114,8 +124,13 @@ footer {
 
 /* Формы входа/регистрации */
 .auth-form {
+    width: 100%;
     max-width: 400px;
-    margin: 2rem auto;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 60vh
 }
 
 .form {
@@ -231,9 +246,9 @@ footer {
     background: #ebebeb;
     border-radius: 8px;
     padding: 1rem;
-    min-width: 280px;
-    max-width: 280px;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 200px;
+    max-width: 100%; 
 }
 
 .column-header {
