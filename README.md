@@ -80,7 +80,7 @@ Dynamic website built with FastAPI that serves as a mini-tracker. The project is
 - `tests/` - pytest for testing (api, db)
 - `.gitignore` - git exclusion file (venv, cashe, .env).
 - `requirments.txt` - a list of the project's external dependencies.
-
+- 
 ## 📷 Screenshots
 
 ## landing page
@@ -94,3 +94,4 @@ Dynamic website built with FastAPI that serves as a mini-tracker. The project is
 
 ## project page
 <img src="./screenshots/project_page.png" alt="project page" width="600">
+
