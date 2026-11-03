@@ -1,3 +1,8 @@
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-000000?style=for-the-badge&logo=FastAPI&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+
 # Kudo
 Kudo - is a website developed using the FastAPI framework for creating Kanban boards
 
@@ -31,7 +36,38 @@ Dynamic website built with FastAPI that serves as a mini-tracker. The project is
 - **dotenv** - for storing secret data
 - **pydantic** - for validation data
 
+## ⏬ Download
 
+1. Clone repository:
+
+    ```bash
+    git clone https://github.com/skrizzz-dev/hollow_knight_vlog.git
+    ```
+    
+2. Create and activate virtual environment
+
+   **Windows:**
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+   **Linux/Mac:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
+   
+3. Download requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   
+4. Run application:
+   ```bash
+   fastapi dev
+   ```
+      
 ## 📂 Structure of project
 
 - `main.py` - main application file, server startup, and routing (routes).
@@ -44,3 +80,17 @@ Dynamic website built with FastAPI that serves as a mini-tracker. The project is
 - `tests/` - pytest for testing (api, db)
 - `.gitignore` - git exclusion file (venv, cashe, .env).
 - `requirments.txt` - a list of the project's external dependencies.
+
+## 📷 Screenshots
+
+## landing page
+<img src="./screenshots/landing_page.png" alt="landing page" width="600">
+
+## auth_page
+<img src="./screenshots/auth_page.png" alt="auth_page" width="600">
+
+## main page
+<img src="./screenshots/main_page.png" alt="main page" width="600">
+
+## project page
+<img src="./screenshots/project_page.png" alt="project page" width="600">
